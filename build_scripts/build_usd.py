@@ -992,6 +992,25 @@ def InstallUSD(context, force, buildArgs):
             if context.mayaLocation:
                 extraArgs.append('-DMAYA_LOCATION="{mayaLocation}"'
                                  .format(mayaLocation=context.mayaLocation))
+
+                if context.useMayaPython:
+					pythonVersionDir = 'Maya.app/Contents/Frameworks/Python.framework/Versions/Current'
+					pythonExecPath = '%s/bin/python' % pythonVersionDir
+					pythonIncludeDir = '%s/include/python2.7' % pythonVersionDir
+					pythonLibDir = '%s/lib' % pythonVersionDir
+					pythonLib = '%s/libpython2.7.dylib' % pythonLibDir
+					extraArgs.append('-DPYTHON_EXECUTABLE="{mayaLocation}/{pythonExecPath}"'
+						.format(mayaLocation=context.mayaLocation,
+							pythonExecPath=pythonExecPath))
+					extraArgs.append('-DPYTHON_INCLUDE_DIR="{mayaLocation}/{pythonIncludeDir}"'
+						.format(mayaLocation=context.mayaLocation,
+							pythonIncludeDir=pythonIncludeDir))
+					extraArgs.append('-DPYTHON_LIBRARY="{mayaLocation}/{pythonLib}"'
+						.format(mayaLocation=context.mayaLocation,
+							pythonLib=pythonLib))
+					extraArgs.append('-DPYTHON_LIBRARIES="{mayaLocation}/{pythonLib}"'
+						.format(mayaLocation=context.mayaLocation,
+							pythonLib=pythonLib))
             extraArgs.append('-DPXR_BUILD_MAYA_PLUGIN=ON')
         else:
             extraArgs.append('-DPXR_BUILD_MAYA_PLUGIN=OFF')
@@ -1208,7 +1227,10 @@ subgroup.add_argument("--no-maya", dest="build_maya", action="store_false",
                       help="Do not build Maya plugin for USD (default)")
 group.add_argument("--maya-location", type=str,
                    help="Directory where Maya is installed.")
-
+group.add_argument("--use-maya-python", dest="use_maya_python",
+                   action="store_true",
+                   help="Build against Maya's version of Python")
+                   
 group = parser.add_argument_group(title="Katana Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--katana", dest="build_katana", action="store_true", 
@@ -1330,6 +1352,7 @@ class InstallContext:
         self.buildMaya = args.build_maya
         self.mayaLocation = (os.path.abspath(args.maya_location) 
                              if args.maya_location else None)
+        self.useMayaPython = args.use_maya_python
 
         # - Katana Plugin
         self.buildKatana = args.build_katana
@@ -1425,7 +1448,7 @@ if not context.buildPython:
         "%s plugin cannot be built when python support is disabled")
     if context.buildMaya:
         PrintError(pythonPluginErrorMsg % "Maya")
-        sys.exit(1)
+#        sys.exit(1)
     if context.buildHoudini:
         PrintError(pythonPluginErrorMsg % "Houdini")
         sys.exit(1)
@@ -1524,6 +1547,7 @@ Building with settings:
       HDF5 support:             {enableHDF5}
     MaterialX Plugin            {buildMaterialX}
     Maya Plugin                 {buildMaya}
+    Use Maya Python           	{useMayaPython}
     Katana Plugin               {buildKatana}
     Houdini Plugin              {buildHoudini}
 
@@ -1570,6 +1594,7 @@ summaryMsg = summaryMsg.format(
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     enableHDF5=("On" if context.enableHDF5 else "Off"),
     buildMaya=("On" if context.buildMaya else "Off"),
+	useMayaPython=("On" if context.useMayaPython else "Off"),
     buildKatana=("On" if context.buildKatana else "Off"),
     buildHoudini=("On" if context.buildHoudini else "Off"))
 
