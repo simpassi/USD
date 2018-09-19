@@ -37,6 +37,7 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/usdGeom/mesh.h"
+#include "pxr/usd/sdf/schema.h"
 
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
@@ -1236,6 +1237,9 @@ UsdMayaUtil::setPlugValue(
     }
     else if (val.IsHolding<std::string>()) {
         status = attrPlug.setString(val.UncheckedGet<std::string>().c_str());
+    }
+    else if (val.IsHolding<SdfAssetPath>()) {
+        status = attrPlug.setString(val.UncheckedGet<SdfAssetPath>().GetResolvedPath().c_str());
     }
     else if (val.IsHolding<TfToken>()) {
         const TfToken token(val.UncheckedGet<TfToken>());
