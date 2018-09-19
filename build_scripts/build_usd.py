@@ -736,7 +736,7 @@ OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-1.7.14.zip"
 
 def InstallOpenImageIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
-        extraArgs = ['-DOIIO_BUILD_TOOLS=OFF',
+        extraArgs = ['-DOIIO_BUILD_TOOLS=ON',
                      '-DOIIO_BUILD_TESTS=OFF',
                      '-DUSE_PYTHON=OFF',
                      '-DSTOP_ON_WARNING=OFF']
