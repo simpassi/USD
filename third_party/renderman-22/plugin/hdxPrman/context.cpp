@@ -176,7 +176,9 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         // without re-initializing the scene.  We work around this by allocating
         // a large framebuffer and making lots of use of the crop window, to
         // generate a sub-region of the correct size.
-        int format[2] = { 3000, 2000 };
+        // A buffer of 4096x4096 can accommodate a full-screen frame on a UHD screen
+        // no matter what the orientation is.
+        int format[2] = { 4096, 4096 };
         options->SetIntegerArray(RixStr.k_Ri_FormatResolution, format, 2);
         float cropWindow[4] = {0, 1, 0, 1};
         options->SetFloatArray(RixStr.k_Ri_CropWindow, cropWindow, 4);
@@ -188,7 +190,31 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         int maxSamples = renderDelegate->GetRenderSetting<int>(
             HdRenderSettingsTokens->convergedSamplesPerPixel,
             defaultMaxSamples);
-        options->SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+        int minSamples = 1;
+        int maxDepth = 10;
+        float pixelVariance = 0.001f;
+
+        // Provide environment key overrides:
+        // RMANUSD_MIN_SAMPLES      min samples         default: 1024
+        // RMANUSD_MAX_SAMPLES      max samples         default: 1
+        // RMANUSD_PIXEL_VARIANCE   max pixel variance  default: 0.001f
+        // RMANUSD_MAX_DEPTH        max depth           default: 10
+        std::string min_samples_env = TfGetenv("RMANUSD_MIN_SAMPLES");
+        if (!min_samples_env.empty()) {
+            minSamples = std::stoi(min_samples_env);
+        }
+        std::string max_samples_env = TfGetenv("RMANUSD_MAX_SAMPLES");
+        if (!max_samples_env.empty()) {
+            maxSamples = std::stoi(max_samples_env);
+        }
+        std::string pixel_variance_env = TfGetenv("RMANUSD_PIXEL_VARIANCE");
+        if (!pixel_variance_env.empty()) {
+            pixelVariance = std::stof(pixel_variance_env);
+        }
+        std::string max_depth_env = TfGetenv("RMANUSD_MAX_DEPTH");
+        if (!max_depth_env.empty()) {
+            maxDepth = std::stoi(max_depth_env);
+        }
 
         // Searchpaths (TEXTUREPATH, etc)
         HdPrman_UpdateSearchPathsFromEnvironment(options);
@@ -196,10 +222,11 @@ void HdxPrman_InteractiveContext::Begin(HdRenderDelegate *renderDelegate)
         // Path tracer config.
         options->SetInteger(RixStr.k_hider_incremental, 1);
         options->SetInteger(RixStr.k_hider_jitter, 1);
-        options->SetInteger(RixStr.k_hider_minsamples, 1);
-        options->SetInteger(RixStr.k_trace_maxdepth, 10);
+        options->SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+        options->SetInteger(RixStr.k_hider_minsamples, minSamples);
+        options->SetInteger(RixStr.k_trace_maxdepth, maxDepth);
         options->SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, 1.0f);
-        options->SetFloat(RixStr.k_Ri_PixelVariance, 0.001f);
+        options->SetFloat(RixStr.k_Ri_PixelVariance, pixelVariance);
         options->SetString(RixStr.k_bucket_order, us_circle);
 
         // Camera lens
